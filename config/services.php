@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'internal_token' => env('INTERNAL_API_TOKEN'),
+    'internal' => [
+        'cliente' => env('CLIENTE_API_URL'), 'veiculo' => env('VEICULO_API_URL'),
+        'funcionario' => env('FUNCIONARIO_API_URL'), 'estoque' => env('ESTOQUE_API_URL'),
+    ],
 
     /*
     |--------------------------------------------------------------------------

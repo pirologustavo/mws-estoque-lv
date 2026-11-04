@@ -11,15 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('os_itens', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('osid');
-            $table->unsignedBigInteger('estoqid');
-            $table->integer('quantidade');
-            $table->decimal('valor_unitario', 10, 2);
-            $table->decimal('subtotal', 10, 2);
-            $table->timestamps();
-        });
+        // os_itens belongs to Os-lv and is never created in this service schema.
     }
 
     /**
@@ -27,6 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('os_itens_table_stub');
+        // No owned table to remove.
     }
 };

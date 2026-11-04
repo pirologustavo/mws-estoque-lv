@@ -3,8 +3,7 @@
 namespace Tests\Feature;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
-use App\Models\Funcionario;
+use Illuminate\Support\Facades\Http;
 
 class EstoqueControllerTest extends TestCase
 {
@@ -14,14 +13,8 @@ class EstoqueControllerTest extends TestCase
     {
         parent::setUp();
 
-        $funcionario = Funcionario::create([
-            'nome' => 'Administrador',
-            'cargo' => 'Gerente',
-            'usr' => 'admin',
-            'password' => bcrypt('123')
-        ]);
-
-        Sanctum::actingAs($funcionario);
+        Http::fake(['*' => Http::response(['valid' => true], 200)]);
+        $this->withToken('test-user-token');
     }
 
     /** @test */
@@ -68,10 +61,9 @@ class EstoqueControllerTest extends TestCase
         $response = $this->getJson('/api/estoque/listar');
         $response->assertStatus(200);
         $response->assertJsonCount(2);
-        $response->assertJsonFragment([
-            'descricao' => 'Filtro de Óleo',
-            'valor_venda' => 35
-        ]);
+        $filtro = collect($response->json())->firstWhere('descricao', 'Filtro de Óleo');
+        $this->assertNotNull($filtro);
+        $this->assertEquals(35.0, (float) $filtro['valor_venda']);
     }
 
     /** @test */
@@ -135,25 +127,17 @@ class EstoqueControllerTest extends TestCase
         $response = $this->postJson("/api/estoque/deletarEstoque/{$item->estoqid}");
 
         $response->assertStatus(200);
-        $this->assertDatabaseMissing('estoque', ['estoqid' => $item->estoqid]);
+        $this->assertFalse((bool) $item->fresh()->ativo);
     }
 
     /** @test */
-    public function test_nao_deve_deletar_item_com_vinculo_em_os()
+    public function test_deve_arquivar_item_com_historico_em_os_sem_acessar_banco_de_os()
     {
         $item = \App\Models\Estoque::create(['descricao' => 'Item Com OS', 'tipo' => 'peca', 'quantidade_atual' => 1, 'quantidade_minima' => 0, 'valor_custo' => 5, 'valor_venda' => 10]);
 
-        \Illuminate\Support\Facades\DB::table('os_itens')->insert([
-            'osid' => 1,
-            'estoqid' => $item->estoqid,
-            'quantidade' => 1,
-            'valor_unitario' => 10,
-            'subtotal' => 10
-        ]);
-
         $response = $this->postJson("/api/estoque/deletarEstoque/{$item->estoqid}");
 
-        $response->assertStatus(422); // Unprocessable Entity
-        $response->assertJsonFragment(['message' => 'Não é possível deletar: este item possui histórico em Ordens de Serviço.']);
+        $response->assertStatus(200);
+        $this->assertFalse((bool) $item->fresh()->ativo);
     }
 }
