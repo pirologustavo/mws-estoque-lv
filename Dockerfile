@@ -9,7 +9,12 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    curl \
     && docker-php-ext-install pdo pdo_mysql zip mbstring
+
+RUN curl -fsSL https://github.com/DataDog/dd-trace-php/releases/latest/download/datadog-setup.php -o /tmp/datadog-setup.php \
+    && php /tmp/datadog-setup.php --php-bin=all \
+    && rm /tmp/datadog-setup.php
 
 RUN a2enmod rewrite
 
