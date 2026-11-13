@@ -6,7 +6,8 @@ use App\Models\Estoque;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\QueryException;
+use App\Saga\StockAdjustmentRejected;
+use App\Saga\StockAdjustmentService;
 
 class EstoqueController extends Controller
 {
@@ -87,7 +88,7 @@ class EstoqueController extends Controller
         return $this->ajustarPorApi($request);
     }
 
-    public function ajustarPorApi(Request $request)
+    public function ajustarPorApi(Request $request, StockAdjustmentService $adjustments)
     {
         $validated = $request->validate([
             'items' => 'required|array|min:1|max:200',
@@ -99,56 +100,11 @@ class EstoqueController extends Controller
             return response()->json(['message' => 'Idempotency-Key obrigatório.'], 400);
         }
 
-        $items = collect($validated['items'])
-            ->groupBy('id')
-            ->map(fn ($group, $id) => ['id' => (int) $id, 'qtd' => $group->sum('qtd')])
-            ->filter(fn ($item) => $item['qtd'] !== 0)
-            ->sortBy('id')->values()->all();
-        if (!$items) return response()->json(['message' => 'O ajuste líquido não pode ser zero.'], 422);
-        $payloadHash = hash('sha256', json_encode($items, JSON_THROW_ON_ERROR));
-        $existing = DB::table('stock_operations')->where('idempotency_key', $key)->first();
-        if ($existing) {
-            if (!hash_equals($existing->payload_hash, $payloadHash)) {
-                return response()->json(['message' => 'Idempotency-Key reutilizado com outro payload.'], 409);
-            }
-            return response()->json(json_decode($existing->response_json, true) ?? ['message' => 'Ajuste já aplicado.']);
-        }
-
         try {
-            $body = DB::transaction(function () use ($key, $payloadHash, $items) {
-                DB::table('stock_operations')->insert([
-                    'idempotency_key' => $key, 'payload_hash' => $payloadHash,
-                    'created_at' => now(), 'updated_at' => now(),
-                ]);
-                foreach ($items as $item) {
-                    $stock = Estoque::where('estoqid', $item['id'])->lockForUpdate()->first();
-                    if (!$stock || (!$stock->ativo && $item['qtd'] > 0)) abort(409, 'Item de estoque inexistente ou arquivado.');
-                    if ($item['qtd'] > 0 && $stock->tipo === 'peca' && $stock->quantidade_atual < $item['qtd']) {
-                        abort(409, 'Saldo de estoque insuficiente.');
-                    }
-                }
-                foreach ($items as $item) {
-                    $stock = Estoque::where('estoqid', $item['id'])->lockForUpdate()->first();
-                    if ($stock->tipo !== 'peca') continue;
-                    if ($item['qtd'] > 0) $stock->decrement('quantidade_atual', $item['qtd']);
-                    else $stock->increment('quantidade_atual', abs($item['qtd']));
-                }
-                $body = ['message' => 'Estoque ajustado com sucesso.', 'items' => $items];
-                DB::table('stock_operations')->where('idempotency_key', $key)->update([
-                    'response_json' => json_encode($body, JSON_THROW_ON_ERROR), 'updated_at' => now(),
-                ]);
-                return $body;
-            });
+            $body = $adjustments->apply($key, $validated['items']);
             return response()->json($body);
-        } catch (QueryException $exception) {
-            $existing = DB::table('stock_operations')->where('idempotency_key', $key)->first();
-            if ($existing) {
-                if (!hash_equals($existing->payload_hash, $payloadHash)) {
-                    return response()->json(['message' => 'Idempotency-Key reutilizado com outro payload.'], 409);
-                }
-                if ($existing->response_json) return response()->json(json_decode($existing->response_json, true));
-            }
-            throw $exception;
+        } catch (StockAdjustmentRejected $exception) {
+            return response()->json(['message' => $exception->getMessage()], 409);
         }
     }
 
