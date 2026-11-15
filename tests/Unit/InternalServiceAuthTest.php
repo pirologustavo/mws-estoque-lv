@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Http\Middleware\InternalServiceAuth;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class InternalServiceAuthTest extends TestCase
@@ -14,7 +15,7 @@ class InternalServiceAuthTest extends TestCase
         $request = Request::create('/api/internal/v1/stock-adjustments');
         $request->headers->set('X-Internal-Token', 'service-secret');
 
-        $response = (new InternalServiceAuth())->handle($request, fn () => response('accepted'));
+        $response = (new InternalServiceAuth)->handle($request, fn () => response('accepted'));
 
         $this->assertSame('accepted', $response->getContent());
     }
@@ -26,9 +27,9 @@ class InternalServiceAuthTest extends TestCase
         $request->headers->set('X-Internal-Token', 'wrong-secret');
 
         try {
-            (new InternalServiceAuth())->handle($request, fn () => response('accepted'));
+            (new InternalServiceAuth)->handle($request, fn () => response('accepted'));
             $this->fail('Expected an unauthorized exception.');
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+        } catch (HttpException $exception) {
             $this->assertSame(401, $exception->getStatusCode());
         }
     }

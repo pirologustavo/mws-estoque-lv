@@ -1,9 +1,11 @@
 <?php
 
 namespace Tests\Feature;
-use Tests\TestCase;
+
+use App\Models\Estoque;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
 
 class EstoqueControllerTest extends TestCase
 {
@@ -12,6 +14,7 @@ class EstoqueControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['services.internal.funcionario' => 'http://funcionario.test']);
 
         Http::fake(['*' => Http::response(['valid' => true], 200)]);
         $this->withToken('test-user-token');
@@ -21,12 +24,12 @@ class EstoqueControllerTest extends TestCase
     public function test_deve_salvar_um_item_com_sucesso()
     {
         $dados = [
-            'descricao'         => 'Bobina',
-            'tipo'              => 'peca',
-            'quantidade_atual'  => '10',
+            'descricao' => 'Bobina',
+            'tipo' => 'peca',
+            'quantidade_atual' => '10',
             'quantidade_minima' => '5',
-            'valor_custo'       => '50',
-            'valor_venda'       => '60',
+            'valor_custo' => '50',
+            'valor_venda' => '60',
         ];
 
         $response = $this->postJson('/api/estoque/salvar', $dados);
@@ -40,22 +43,22 @@ class EstoqueControllerTest extends TestCase
 
     public function test_deve_listar_todos_os_itens()
     {
-        \App\Models\Estoque::create([
+        Estoque::create([
             'descricao' => 'Filtro de Óleo',
             'tipo' => 'peca',
             'quantidade_atual' => 10,
             'quantidade_minima' => 2,
             'valor_custo' => 20,
-            'valor_venda' => 35
+            'valor_venda' => 35,
         ]);
 
-        \App\Models\Estoque::create([
+        Estoque::create([
             'descricao' => 'Pastilha de Freio',
             'tipo' => 'peca',
             'quantidade_atual' => 5,
             'quantidade_minima' => 1,
             'valor_custo' => 80,
-            'valor_venda' => 120
+            'valor_venda' => 120,
         ]);
 
         $response = $this->getJson('/api/estoque/listar');
@@ -69,9 +72,9 @@ class EstoqueControllerTest extends TestCase
     /** @test */
     public function test_deve_buscar_item_por_id()
     {
-        $item = \App\Models\Estoque::create([
+        $item = Estoque::create([
             'descricao' => 'Amortecedor', 'tipo' => 'peca', 'quantidade_atual' => 10,
-            'quantidade_minima' => 2, 'valor_custo' => 100, 'valor_venda' => 150
+            'quantidade_minima' => 2, 'valor_custo' => 100, 'valor_venda' => 150,
         ]);
 
         $response = $this->getJson("/api/estoque/buscarPorId/{$item->estoqid}");
@@ -83,9 +86,9 @@ class EstoqueControllerTest extends TestCase
     /** @test */
     public function test_deve_buscar_itens_pela_descricao()
     {
-        \App\Models\Estoque::create(['descricao' => 'Pneu Aro 14', 'tipo' => 'peca', 'quantidade_atual' => 4, 'quantidade_minima' => 1, 'valor_custo' => 200, 'valor_venda' => 300]);
+        Estoque::create(['descricao' => 'Pneu Aro 14', 'tipo' => 'peca', 'quantidade_atual' => 4, 'quantidade_minima' => 1, 'valor_custo' => 200, 'valor_venda' => 300]);
 
-        $response = $this->getJson("/api/estoque/buscar?q=Pneu");
+        $response = $this->getJson('/api/estoque/buscar?q=Pneu');
 
         $response->assertStatus(200);
         $response->assertJsonFragment(['descricao' => 'Pneu Aro 14']);
@@ -94,10 +97,10 @@ class EstoqueControllerTest extends TestCase
     /** @test */
     public function test_deve_atualizar_dados_do_estoque()
     {
-        $item = \App\Models\Estoque::create(['descricao' => 'Vela', 'tipo' => 'peca', 'quantidade_atual' => 20, 'quantidade_minima' => 5, 'valor_custo' => 10, 'valor_venda' => 20]);
+        $item = Estoque::create(['descricao' => 'Vela', 'tipo' => 'peca', 'quantidade_atual' => 20, 'quantidade_minima' => 5, 'valor_custo' => 10, 'valor_venda' => 20]);
 
         $response = $this->putJson("/api/estoque/atualizarEstoque/{$item->estoqid}", [
-            'descricao' => 'Vela Iridium'
+            'descricao' => 'Vela Iridium',
         ]);
 
         $response->assertStatus(200);
@@ -107,10 +110,10 @@ class EstoqueControllerTest extends TestCase
     /** @test */
     public function test_deve_alterar_quantidade_do_estoque_em_lote()
     {
-        $item = \App\Models\Estoque::create(['descricao' => 'Oleo', 'tipo' => 'peca', 'quantidade_atual' => 10, 'quantidade_minima' => 2, 'valor_custo' => 20, 'valor_venda' => 40]);
+        $item = Estoque::create(['descricao' => 'Oleo', 'tipo' => 'peca', 'quantidade_atual' => 10, 'quantidade_minima' => 2, 'valor_custo' => 20, 'valor_venda' => 40]);
 
         $dados = [
-            ['id' => $item->estoqid, 'qtd' => 3]
+            ['id' => $item->estoqid, 'qtd' => 3],
         ];
 
         $response = $this->postJson('/api/estoque/alterarEstoque', $dados);
@@ -122,7 +125,7 @@ class EstoqueControllerTest extends TestCase
     /** @test */
     public function test_deve_deletar_item_sem_vinculo_com_os()
     {
-        $item = \App\Models\Estoque::create(['descricao' => 'Lixeira', 'tipo' => 'peca', 'quantidade_atual' => 1, 'quantidade_minima' => 0, 'valor_custo' => 5, 'valor_venda' => 10]);
+        $item = Estoque::create(['descricao' => 'Lixeira', 'tipo' => 'peca', 'quantidade_atual' => 1, 'quantidade_minima' => 0, 'valor_custo' => 5, 'valor_venda' => 10]);
 
         $response = $this->postJson("/api/estoque/deletarEstoque/{$item->estoqid}");
 
@@ -133,7 +136,7 @@ class EstoqueControllerTest extends TestCase
     /** @test */
     public function test_deve_arquivar_item_com_historico_em_os_sem_acessar_banco_de_os()
     {
-        $item = \App\Models\Estoque::create(['descricao' => 'Item Com OS', 'tipo' => 'peca', 'quantidade_atual' => 1, 'quantidade_minima' => 0, 'valor_custo' => 5, 'valor_venda' => 10]);
+        $item = Estoque::create(['descricao' => 'Item Com OS', 'tipo' => 'peca', 'quantidade_atual' => 1, 'quantidade_minima' => 0, 'valor_custo' => 5, 'valor_venda' => 10]);
 
         $response = $this->postJson("/api/estoque/deletarEstoque/{$item->estoqid}");
 

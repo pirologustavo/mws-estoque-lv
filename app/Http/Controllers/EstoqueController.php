@@ -3,23 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\Estoque;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use App\Saga\StockAdjustmentRejected;
 use App\Saga\StockAdjustmentService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class EstoqueController extends Controller
 {
     public function salvar(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'descricao'         => 'required|string|max:255',
-            'tipo'              => 'required|in:peca,servico',
-            'quantidade_atual'  => 'required_if:tipo,peca|numeric|min:0',
+            'descricao' => 'required|string|max:255',
+            'tipo' => 'required|in:peca,servico',
+            'quantidade_atual' => 'required_if:tipo,peca|numeric|min:0',
             'quantidade_minima' => 'required_if:tipo,peca|integer|min:0',
-            'valor_custo'       => 'nullable|numeric|min:0',
-            'valor_venda'       => 'required|numeric|min:0',
+            'valor_custo' => 'nullable|numeric|min:0',
+            'valor_venda' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -30,13 +31,14 @@ class EstoqueController extends Controller
 
         return response()->json([
             'message' => 'Item cadastrado com sucesso!',
-            'data'    => $estoque
+            'data' => $estoque,
         ], 201);
     }
 
     public function listar()
     {
         $estoque = Estoque::where('ativo', true)->select('estoqid', 'descricao', 'tipo', 'quantidade_atual', 'quantidade_minima', 'valor_venda')->get();
+
         return response()->json($estoque);
     }
 
@@ -44,8 +46,8 @@ class EstoqueController extends Controller
     {
         $estoque = Estoque::where('ativo', true)->select('estoqid', 'descricao', 'tipo', 'quantidade_atual', 'quantidade_minima', 'valor_venda')->where('estoqid', $id)->first();
 
-        if (!$estoque) {
-            return response()->json(['message' => "Item não encontrado!"], 404);
+        if (! $estoque) {
+            return response()->json(['message' => 'Item não encontrado!'], 404);
         }
 
         return response()->json($estoque);
@@ -55,8 +57,8 @@ class EstoqueController extends Controller
     {
         $estoque = Estoque::where('ativo', true)->where('estoqid', $id)->first();
 
-        if (!$estoque) {
-            return response()->json(['message' => "estoque não encontrado"], 404);
+        if (! $estoque) {
+            return response()->json(['message' => 'estoque não encontrado'], 404);
         }
 
         $dados = $request->all();
@@ -64,7 +66,7 @@ class EstoqueController extends Controller
 
         return response()->json([
             'message' => 'estoque atualizado com sucesso!',
-            'data'    => $estoque
+            'data' => $estoque,
         ]);
     }
 
@@ -82,10 +84,11 @@ class EstoqueController extends Controller
     public function alterarEstoque(Request $request)
     {
         $request->merge(['items' => $request->all()]);
-        if (!$request->header('Idempotency-Key')) {
-            $request->headers->set('Idempotency-Key', (string) \Illuminate\Support\Str::uuid());
+        if (! $request->header('Idempotency-Key')) {
+            $request->headers->set('Idempotency-Key', (string) Str::uuid());
         }
-        return $this->ajustarPorApi($request);
+
+        return $this->ajustarPorApi($request, app(StockAdjustmentService::class));
     }
 
     public function ajustarPorApi(Request $request, StockAdjustmentService $adjustments)
@@ -102,6 +105,7 @@ class EstoqueController extends Controller
 
         try {
             $body = $adjustments->apply($key, $validated['items']);
+
             return response()->json($body);
         } catch (StockAdjustmentRejected $exception) {
             return response()->json(['message' => $exception->getMessage()], 409);
@@ -114,10 +118,11 @@ class EstoqueController extends Controller
             'id' => (int) $item['id'], 'qtd' => -abs((int) $item['qtd']),
         ])->all();
         $request->merge(['items' => $itens]);
-        if (!$request->header('Idempotency-Key')) {
-            $request->headers->set('Idempotency-Key', (string) \Illuminate\Support\Str::uuid());
+        if (! $request->header('Idempotency-Key')) {
+            $request->headers->set('Idempotency-Key', (string) Str::uuid());
         }
-        return $this->ajustarPorApi($request);
+
+        return $this->ajustarPorApi($request, app(StockAdjustmentService::class));
     }
 
     public function deletarEstoque(string $id)
@@ -125,7 +130,7 @@ class EstoqueController extends Controller
         return DB::transaction(function () use ($id) {
             $estoque = Estoque::where('estoqid', $id)->first();
 
-            if (!$estoque) {
+            if (! $estoque) {
                 return response()->json(['message' => 'Estoque não encontrado'], 404);
             }
 
