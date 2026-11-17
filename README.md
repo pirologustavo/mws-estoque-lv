@@ -65,6 +65,7 @@ Use PHP 8.4, PDO SQLite e PCOV. A cobertura inclui todo o diretório `app`; o pi
 - [Arquitetura do serviço](docs/ARCHITECTURE.md).
 - [Rotas e autenticação](docs/API.md).
 - [Collection Postman](docs/api.postman_collection.json).
+- [Preparação da apresentação e variáveis](docs/API.md#apresentação-no-postman).
 
 O login ocorre na API Funcionário em `POST /api/login`, com `usr` e `password`. Envie o token retornado em `Authorization: Bearer`. Chamadas internas exigem `X-Internal-Token`; use o mesmo segredo forte entre os serviços.
 
