@@ -45,6 +45,8 @@ Execute `php artisan migrate --force` no container após provisionar o database 
 
 Provisione os bancos, ConfigMap `mws-config` e Secrets individuais com o bootstrap do repositório de integração. Aplique `deploy/k8s/` com a imagem construída para o serviço. O CD realiza essa aplicação e aguarda os rollouts. As dependências de infraestrutura precisam existir antes do deploy da aplicação.
 
+No EKS do laboratório, o RabbitMQ usa um volume persistente local vinculado ao nó. A infraestrutura é aplicada no repositório de integração com `python3 scripts/configure-local-storage.py --context mws-eks`. Consulte o [guia de armazenamento local](https://github.com/pirologustavo/MWS-TechChallenge/tree/main/k8s/overlays/eks-local). Os dados são preservados ao recriar o pod no mesmo nó; perda ou substituição do nó exige restauração de backup.
+
 ## Testes Automatizados
 
 ```bash
