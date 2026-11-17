@@ -17,7 +17,7 @@ phpstan analyse app --level=1 --memory-limit=512M --no-progress --autoload-file=
 docker build -t estoque-lv:local .
 ```
 
-Use PHP 8.4 com sockets, pdo_sqlite e PCOV nos testes; Cliente requer mongodb em produção. Os testes usam SQLite em memória e integrações simuladas. Para BDD da OS: `php vendor/bin/phpunit --group=bdd`. CI publica o artifact `coverage` a cada execução. A cobertura mínima é aplicada ao serviço inteiro, sem exclusões de código de aplicação.
+Use PHP 8.4 com sockets, pdo_sqlite e PCOV nos testes; Cliente requer mongodb em produção. Os testes usam SQLite em memória e integrações simuladas. Para BDD da OS: `php vendor/bin/phpunit --group=bdd`. O relatório Clover é usado durante o CI pelo gate de cobertura. A cobertura mínima é aplicada ao serviço inteiro, sem exclusões de código de aplicação.
 
 ## Entrega
 
