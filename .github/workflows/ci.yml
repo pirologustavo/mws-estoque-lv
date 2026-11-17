@@ -1,0 +1,43 @@
+name: CI - Estoque-lv
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality-test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, mongodb, sockets
+          coverage: pcov
+          tools: phpstan
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+      - name: Run tests with Clover coverage
+        run: php artisan test --coverage-clover=coverage.xml
+      - name: Enforce 80% service coverage
+        run: python3 scripts/check_coverage.py coverage.xml --minimum 80
+      - name: Check style
+        run: vendor/bin/pint --test app tests
+      - name: Static quality analysis
+        run: phpstan analyse app --level=1 --memory-limit=512M --no-progress --autoload-file=vendor/autoload.php
+      - name: Build service image
+        run: docker build --tag estoque-lv:ci .
+
+      - name: Upload coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.xml
+          if-no-files-found: warn

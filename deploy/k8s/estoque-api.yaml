@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: estoque-lv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: estoque-lv
+  template:
+    metadata:
+      labels:
+        app: estoque-lv
+        tags.datadoghq.com/service: estoque-lv
+        tags.datadoghq.com/env: prod
+    spec:
+      containers:
+      - name: estoque-lv
+        image: pirolo/estoque-api:latest
+        ports:
+        - containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /up
+            port: 80
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /up
+            port: 80
+          periodSeconds: 10
+          timeoutSeconds: 3
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        envFrom: &id001
+        - configMapRef:
+            name: mws-config
+        - secretRef:
+            name: mws-estoque-service-secret
+        env:
+        - name: LOG_CHANNEL
+          value: stderr
+        - name: DD_SERVICE
+          value: estoque-lv
+        - name: DD_ENV
+          value: prod
+        - name: DD_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_TRACE_AGENT_PORT
+          value: '8126'
+        - name: DD_DOGSTATSD_PORT
+          value: '8125'
+        - name: DD_LOGS_INJECTION
+          value: 'true'
+        - &id002
+          name: DB_DATABASE
+          value: estoque_db
+        - name: CLIENTE_API_URL
+          value: http://cliente-lv
+        - name: VEICULO_API_URL
+          value: http://veiculo-lv
+        - name: FUNCIONARIO_API_URL
+          value: http://funcionario-lv
+        - name: ESTOQUE_API_URL
+          value: http://estoque-lv
+      initContainers:
+      - name: migrate
+        image: pirolo/estoque-api:latest
+        command:
+        - php
+        - artisan
+        - migrate
+        - --force
+        envFrom: *id001
+        env:
+        - *id002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: estoque-lv
+spec:
+  selector:
+    app: estoque-lv
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80

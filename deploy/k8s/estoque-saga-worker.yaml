@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: estoque-lv-saga-worker
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: estoque-lv-saga-worker
+  template:
+    metadata:
+      labels:
+        app: estoque-lv-saga-worker
+        tags.datadoghq.com/service: estoque-lv
+        tags.datadoghq.com/env: prod
+    spec:
+      containers:
+        - name: estoque-lv-saga-worker
+          image: pirolo/estoque-api:latest
+          imagePullPolicy: Always
+          workingDir: /var/www/html
+          command:
+            - sh
+            - -c
+            - php artisan migrate --force && (php artisan saga:publish-outbox &) && exec php artisan saga:consume-stock-adjustments
+          envFrom:
+            - configMapRef:
+                name: mws-config
+            - secretRef:
+                name: mws-estoque-service-secret
+          env:
+            - name: DB_DATABASE
+              value: estoque_db
+            - name: DD_SERVICE
+              value: estoque-lv
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_DOGSTATSD_PORT
+              value: "8125"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mws-rabbitmq-secret
+                  key: username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mws-rabbitmq-secret
+                  key: password
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

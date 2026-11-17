@@ -1,0 +1,460 @@
+{
+  "info": {
+    "name": "Estoque-lv API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8003"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "internal_token",
+      "value": ""
+    },
+    {
+      "key": "id",
+      "value": "1"
+    },
+    {
+      "key": "osid",
+      "value": "1"
+    },
+    {
+      "key": "cpf",
+      "value": ""
+    },
+    {
+      "key": "payment_id",
+      "value": ""
+    },
+    {
+      "key": "operation_id",
+      "value": ""
+    },
+    {
+      "key": "signature",
+      "value": ""
+    },
+    {
+      "key": "request_id",
+      "value": ""
+    },
+    {
+      "key": "webhook_signature",
+      "value": ""
+    },
+    {
+      "key": "email",
+      "value": ""
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "usr",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "POST /api/estoque/alterarEstoque",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/estoque/alterarEstoque",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@alterarEstoque. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "PUT /api/estoque/atualizarEstoque/{id}",
+      "request": {
+        "method": "PUT",
+        "url": "{{base_url}}/api/estoque/atualizarEstoque/{{id}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@atualizarEstoque. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"descricao\": \"Filtro\",\n  \"tipo\": \"peca\",\n  \"quantidade_atual\": 10,\n  \"quantidade_minima\": 2,\n  \"valor_custo\": 20,\n  \"valor_venda\": 50\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "GET /api/estoque/buscar",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/estoque/buscar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@buscar. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /api/estoque/buscarPorId/{id}",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/estoque/buscarPorId/{{id}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@buscarPorId. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/estoque/deletarEstoque/{id}",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/estoque/deletarEstoque/{{id}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@deletarEstoque. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "POST /api/estoque/estornarItens",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/estoque/estornarItens",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@estornarItens. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "GET /api/estoque/listar",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/estoque/listar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@listar. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /api/estoque/salvar",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/estoque/salvar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@salvar. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clientid\": 1,\n  \"carid\": 1,\n  \"funcid\": 1,\n  \"sintomas\": \"Ruído\",\n  \"itens\": [\n    {\n      \"id\": 1,\n      \"qtd\": 1\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "GET /api/internal/v1/itens-estoque",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/internal/v1/itens-estoque?ids[0]={{id}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          },
+          {
+            "key": "X-Internal-Token",
+            "value": "{{internal_token}}"
+          }
+        ],
+        "description": "Closure. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "noauth"
+        }
+      }
+    },
+    {
+      "name": "POST /api/internal/v1/stock-adjustments",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/internal/v1/stock-adjustments",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          },
+          {
+            "key": "X-Internal-Token",
+            "value": "{{internal_token}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{operation_id}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@ajustarPorApi. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    {\n      \"id\": 1,\n      \"qtd\": 1\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "GET /api/ping",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/ping",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          }
+        ],
+        "description": "Closure. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "noauth"
+        }
+      }
+    },
+    {
+      "name": "POST /api/v1/stock-adjustments",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/stock-adjustments",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{$guid}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{operation_id}}"
+          }
+        ],
+        "description": "App\\Http\\Controllers\\EstoqueController@ajustarPorApi. Substitua os identificadores pelas entidades do seu ambiente.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    {\n      \"id\": 1,\n      \"qtd\": 1\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
