@@ -1,62 +1,83 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema de Gestão de Oficina Mecânica — API de Estoque
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+### MVP - Tech Challenge
 
-## About Laravel
+Catálogo de peças e serviços, reserva e devolução de saldo idempotentes.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Arquitetura e Tecnologias
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Linguagem:** PHP 8.4 e Laravel.
+- **Banco de Dados:** MySQL 8.0, database exclusivo `estoque_db`; SQLite em memória nos testes.
+- **Orquestração:** Docker e Kubernetes.
+- **Comunicação:** REST autenticado; RabbitMQ na integração OS/Estoque.
+- **Observabilidade:** Datadog APM, logs JSON, correlação e métricas DogStatsD.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Ecossistema de Microsserviços e Front-end
 
-## Learning Laravel
+A API integra o ecossistema Cliente, Veículo, Estoque, Funcionário e OS, consumido pelo Monólito PHP. Cada API possui repositório, database, usuário SQL e pipeline próprios. Referências remotas usam HTTP; nenhum serviço consulta diretamente o banco de outro.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Saga das ordens de serviço
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+A Saga é coreografada entre OS e Estoque via RabbitMQ. A coreografia mantém cada serviço responsável pela própria transação e permite recuperação após indisponibilidade, sem coordenador central. Outbox transacional, inbox e chaves idempotentes evitam perda de intenção e repetição de efeitos.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Rejeições de estoque cancelam a abertura ou restauram o snapshot anterior. Após cinco minutos sem resultado, a OS solicita cancelamento remoto; o Estoque desfaz o ajuste confirmado ou impede a aplicação tardia. A OS só compensa localmente depois dessa confirmação. Reenvios recuperam resultados que chegaram à DLQ. Enquanto o estoque estiver indisponível, a operação permanece bloqueada e é retomada automaticamente quando a comunicação volta.
 
-## Agentic Development
+Falha definitiva no envio do orçamento solicita cancelamento da OS e devolução das peças. Pagamentos e estornos são reconciliados pela OS. Eventos incluem `saga_id`, `event_id`, `operation_id` e `correlation_id`.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Como executar o projeto
+
+### Opção 1: Ambiente Local (Docker)
+
+Para o ecossistema completo, use o [repositório de integração](https://github.com/pirologustavo/MWS-TechChallenge) e execute `docker compose up -d --build` e `./setup.sh` na raiz.
+
+Para construir esta API separadamente:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+cp .env.example .env
+# Configure banco, APP_KEY, INTERNAL_API_TOKEN e URLs dos serviços no .env.
+docker build -t mws-estoque-lv:local .
+docker run --rm --env-file .env -p 8003:80 mws-estoque-lv:local
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Execute `php artisan migrate --force` no container após provisionar o database e o usuário exclusivos. Nunca use `migrate:fresh` em um ambiente com dados.
 
-## Contributing
+### Opção 2: Ambiente Clusterizado (Kubernetes)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Provisione os bancos, ConfigMap `mws-config` e Secrets individuais com o bootstrap do repositório de integração. Aplique `deploy/k8s/` com a imagem construída para o serviço. O CD realiza essa aplicação e aguarda os rollouts. As dependências de infraestrutura precisam existir antes do deploy da aplicação.
 
-## Code of Conduct
+## Testes Automatizados
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer install
+php artisan test --coverage-clover=coverage.xml
+python3 scripts/check_coverage.py coverage.xml --minimum 80
+php vendor/bin/pint --test app tests
+phpstan analyse app --level=1 --memory-limit=512M --no-progress --autoload-file=vendor/autoload.php
+```
 
-## Security Vulnerabilities
+Use PHP 8.4, PDO SQLite e PCOV. A cobertura inclui todo o diretório `app`; o pipeline falha abaixo de 80% por serviço. Pint e PHPStan verificam estilo e qualidade estática.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Documentação e APIs
 
-## License
+- [Arquitetura do serviço](docs/ARCHITECTURE.md).
+- [Rotas e autenticação](docs/API.md).
+- [Collection Postman](docs/api.postman_collection.json).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+O login ocorre na API Funcionário em `POST /api/login`, com `usr` e `password`. Envie o token retornado em `Authorization: Bearer`. Chamadas internas exigem `X-Internal-Token`; use o mesmo segredo forte entre os serviços.
 
-## Entregáveis Fase 4
+## Observabilidade
 
-[Arquitetura, execução e CI/CD](docs/ARCHITECTURE.md) · [API e autenticação](docs/API.md) · [Collection Postman](docs/api.postman_collection.json) · [Cobertura](docs/evidence/coverage.xml)
+Healthcheck em `/up`, logs estruturados em `stderr` e propagação de `X-Correlation-ID`. Configure `DD_SERVICE`, `DD_ENV` e `DD_AGENT_HOST`. O Agent e os recursos de dashboard e alertas são provisionados pelo repositório de integração.
+
+## CI/CD
+
+O workflow `ci.yml` executa testes, cobertura mínima, Pint, PHPStan e build. `cd.yml` é disparado após CI aprovado de um push na `main`, publica a imagem identificada pelo SHA no ECR, aplica os manifests e aguarda o rollout no EKS.
+
+Configure `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` e, para credenciais temporárias, `AWS_SESSION_TOKEN`. A branch `main` deve exigir PR e o check `quality-test-build`; não há bypass automático do pipeline.
+
+[Execuções do pipeline](https://github.com/pirologustavo/mws-estoque-lv/actions).
+
+## Autor
+
+- Gustavo Pirolo — Cientista da Computação & Trainee Software Development.
+- RM371637.

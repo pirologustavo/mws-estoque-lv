@@ -3,3 +3,11 @@
 .git
 vendor
 node_modules
+
+bootstrap/cache/*.php
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+docs/evidence
+coverage.xml
